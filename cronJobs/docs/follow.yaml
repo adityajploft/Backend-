@@ -1,0 +1,106 @@
+# docs/follow.yaml
+tags:
+  - name: Follow System
+    description: Endpoints for managing follow requests and relationships
+
+paths:
+  /api/follow/requests:
+    get:
+      summary: Get all pending follow requests for me
+      tags: [Follow System]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: A list of pending follow requests.
+        '401':
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/follow:
+    post:
+      summary: Send a follow request to a user
+      tags: [Follow System]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [follow_email_or_id]
+              properties:
+                follow_email_or_id:
+                  type: string
+                  description: The email address or the _id of the user to follow.
+                  example: "otheruser@example.com"
+      responses:
+        '201':
+          description: Follow request sent successfully.
+        '400':
+          description: Bad Request (e.g., trying to follow yourself).
+        '404':
+          description: User to follow not found.
+        '422':
+          description: Validation Error.
+
+  /api/follow/requests/{requestId}:
+    put:
+      summary: Accept or reject a follow request
+      tags: [Follow System]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: requestId
+          required: true
+          schema:
+            type: string
+          description: The ID of the follow request document.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum: [accept, reject]
+                  description: The action to perform on the request.
+      responses:
+        '200':
+          description: Action completed successfully.
+        '401':
+          description: Unauthorized to act on this request.
+        '404':
+          description: Request not found.
+        '422':
+          description: Validation Error (e.g., invalid action).
+
+  /api/follow/{userId}:
+    delete:
+      summary: Unfollow a user or remove a follower
+      tags: [Follow System]
+      security:
+        - bearerAuth: []
+      description: This endpoint is dual-purpose. If you provide the ID of someone you are following, you will unfollow them. If you provide the ID of someone who is following you, you will remove them as a follower.
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+          description: The ID of the user to unfollow or remove.
+      responses:
+        '200':
+          description: Follow relationship removed successfully.
+        '401':
+          description: Unauthorized.
+        '404':
+          description: Follow relationship not found.

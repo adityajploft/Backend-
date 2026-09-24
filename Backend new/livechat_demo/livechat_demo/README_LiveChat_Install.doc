@@ -1,0 +1,105 @@
+{\rtf1\ansi\deff0
+{\fonttbl{\f0 Arial;}}
+\f0\fs22
+Live Chat Demo - README\par
+\par
+overview\par
+- Self-hosted live chat demo with real-time 1:1 and group chat, retractable right-side contacts, bottom chat windows, typing/beep, file/photo/video sharing, click-to-start video, presence colors (green online, gray offline), contact search, add contact, and a single silent auto-add trigger.\par
+- Emoji support: emojis work when typed; optional emoji picker button can be enabled.\par
+\par
+features included\par
+- Real-time 1:1 and group chat\par
+- Retractable right-side contacts/groups with avatars\par
+- Bottom-docked chat windows (minimize/restore)\par
+- Typing indicator with beep on receive\par
+- File/photo/video attachments\par
+- Click-to-start video calls\par
+- Presence colors: green = online, gray = offline (optional away)\par
+- Search contacts field\par
+- Add contact field (by username/email, saved)\par
+- Silent auto-add at one workflow point (no pop-up)\par
+\par
+requirements\par
+- Node.js 18+ and a reverse proxy (Apache or Nginx) with SSL\par
+- SQLite by default; MySQL or MariaDB optional\par
+\par
+quick install\par
+1) Upload the provided package to your server, for example: /var/www/chat\par
+2) In that folder, install dependencies:\par
+   npm ci\par
+3) Copy the environment file:\par
+   cp .env.example .env\par
+4) Set these in .env:\par
+   APP_URL=https://chat.yourdomain.com\par
+   PORT=3000\par
+   SESSION_SECRET=replace_me\par
+   DB_DIALECT=sqlite\par
+   SQLITE_FILE=./data/chat.sqlite\par
+   MYSQL_HOST=...\par
+   MYSQL_USER=...\par
+   MYSQL_PASSWORD=...\par
+   MYSQL_DATABASE=...\par
+   EMOJI_PICKER=0 or 1\par
+   IDLE_MINUTES=5\par
+5) Initialize storage (creates tables if missing):\par
+   npm run db:init\par
+6) Start the service (or use pm2/systemd):\par
+   npm start\par
+\par
+reverse proxy example (nginx)\par
+- Proxy your chat subdomain to http://127.0.0.1:3000 and enable WebSocket upgrade:\par
+\par
+   server {\par
+     listen 443 ssl;\par
+     server_name chat.yourdomain.com;\par
+\par
+     location / {\par
+       proxy_pass http://127.0.0.1:3000;\par
+       proxy_http_version 1.1;\par
+       proxy_set_header Upgrade $http_upgrade;\par
+       proxy_set_header Connection "upgrade";\par
+       proxy_set_header Host $host;\par
+     }\par
+   }\par
+\par
+apache note\par
+- For Apache, enable ProxyPass and ProxyPassReverse and be sure to allow WebSocket upgrade (Upgrade and Connection headers).\par
+\par
+sso integration (simple)\par
+- The chat trusts these headers from your app’s server-side only when proxying:\par
+  X-User-Id, X-User-Name, X-User-Email, X-User-Avatar\par
+- Set them for authenticated users when proxying to the chat.\par
+- For quick testing, passing ?u=DisplayName on the demo URL also works.\par
+\par
+silent auto-add hook (one workflow point)\par
+- Call this server-to-server when your workflow event fires:\par
+  POST /api/contacts/auto-add\par
+  body: { "owner_id": "<your_user_id>", "contact_id": "<other_user_id>" }\par
+- Returns 200 if the contact is added; no pop-up shown.\par
+\par
+presence colors\par
+- Green = online, gray = offline. Optional away if user idle exceeds IDLE_MINUTES.\par
+\par
+search and add contact\par
+- Search filters by name/email in the contacts list.\par
+- Add contact supports by username/email and stores it in the contacts table.\par
+\par
+emoji option\par
+- If EMOJI_PICKER=1, an emoji picker button is shown; otherwise users can type emojis normally.\par
+\par
+deployment guidance\par
+- Install on staging first.\par
+- Use a separate subdomain or folder.\par
+- Use separate tables or a distinct table prefix.\par
+- Avoid altering existing PHP/CodeIgniter routes and code.\par
+- Keep assets under their own path to prevent collisions.\par
+\par
+troubleshooting\par
+- If WebSockets do not connect, verify reverse proxy Upgrade and Connection headers.\par
+- If presence does not change, check server time and IDLE_MINUTES.\par
+- For MySQL, ensure charset=utf8mb4 and collation=utf8mb4_unicode_ci.\par
+\par
+handover\par
+- Package includes source code, .env example, and this README.\par
+- Ownership: self-hosted, no subscriptions.\par
+}

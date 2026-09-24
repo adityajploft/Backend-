@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Quick Chat Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <div id="topbar">
+    <div>Quick Chat Demo</div>
+    <div id="me"></div>
+  </div>
+
+  <div id="contactsPane" class="open">
+    <div id="contactsHeader">
+    <span>Contacts</span>
+    <input id="contactSearch" placeholder="Search…" />
+    <button id="addContact" title="Add contact">+</button>
+    <button id="togglePane">›</button>
+    </div>
+
+    <div id="contacts"></div>
+    <div id="groupsHeader">
+      <span>Groups</span>
+      <button id="newGroup">+</button>
+    </div>
+    <div id="groups"></div>
+  </div>
+
+  <div id="dock"></div>
+
+  <audio id="beep" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAAAAA" preload="auto"></audio>
+
+  <script src="client.js"></script>
+</body>
+</html>

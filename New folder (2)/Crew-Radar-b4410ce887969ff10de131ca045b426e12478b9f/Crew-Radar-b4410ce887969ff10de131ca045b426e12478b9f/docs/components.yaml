@@ -1,0 +1,80 @@
+# docs/components.yaml
+components:
+  # Reusable data structures
+  schemas:
+    # A standard user object
+    UserObject:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The user's unique identifier.
+          example: "60c72b2f9b1e8a001f8e4a3c"
+        fullName:
+          type: string
+          example: "Peter Parker"
+        email:
+          type: string
+          format: email
+          example: "peter@example.com"
+        preferences:
+          type: object
+          properties:
+            allowCalendarAccess: { type: boolean, default: false }
+            allowNotifications: { type: boolean, default: false }
+            allowContactsAccess: { type: boolean, default: false }
+
+    # Standard success response for login or registration
+    UserAuthSuccess:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Login successful"
+        token:
+          type: string
+          description: JWT token for authenticating subsequent requests.
+        user:
+          $ref: '#/components/schemas/UserObject'
+
+    # Standard response for validation errors (Status 422)
+    ValidationError:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              value:
+                type: string
+                description: The value that caused the error.
+              msg:
+                type: string
+                description: The error message.
+                example: "Password must be at least 6 characters long."
+              param:
+                type: string
+                description: The name of the parameter that failed validation.
+                example: "password"
+              location:
+                type: string
+                description: The location of the parameter (e.g., body).
+                example: "body"
+
+    # Standard response for general errors (Status 400, 401, 404, 500)
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          description: A message describing the error.
+          example: "Invalid email or password"
+
+  # Definition of our security scheme (JWT Bearer Token)
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Enter your JWT token in the format: Bearer {token}"

@@ -1,0 +1,93 @@
+# docs/notifications.yaml
+tags:
+  - name: Notifications
+    description: Endpoints for managing user notifications and settings
+
+paths:
+  /api/notifications:
+    get:
+      summary: Get all notifications for the current user
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: A list of the user's notifications, sorted by most recent.
+        '401':
+          description: Unauthorized.
+
+    post:
+      summary: (Admin/Test) Send a notification to the current user
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string, example: "Test Title" }
+                message: { type: string, example: "This is a test notification." }
+                type: { type: string, example: "test_event" }
+                meta_data: { type: object, example: { "key": "value" } }
+      responses:
+        '201':
+          description: Notification created successfully.
+        '422':
+          description: Validation Error.
+
+  /api/notifications/settings:
+    get:
+      summary: Get the current user's notification settings
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The user's notification settings object.
+        '401':
+          description: Unauthorized.
+
+    put:
+      summary: Update the current user's notification settings
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                flight_takeoff_alert: { type: boolean, example: false }
+                flight_landing_alert: { type: boolean, example: true }
+                new_follower_alert: { type: boolean, example: true }
+      responses:
+        '200':
+          description: Settings updated successfully.
+        '422':
+          description: Validation Error.
+
+  /api/notifications/{notificationId}/read:
+    put:
+      summary: Mark a single notification as read
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: notificationId
+          required: true
+          schema:
+            type: string
+          description: The ID of the notification to mark as read.
+      responses:
+        '200':
+          description: Notification marked as read successfully.
+        '401':
+          description: Unauthorized to update this notification.
+        '404':
+          description: Notification not found.

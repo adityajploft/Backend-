@@ -1,0 +1,274 @@
+tags:
+  - name: Auth
+    description: User registration, authentication, and password management endpoints
+
+paths:
+  /api/auth/send-verification-code:
+    post:
+      summary: Step 1 - Send a verification code to an email
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email, example: "newuser@example.com" }
+      responses:
+        '200':
+          description: Verification code sent successfully.
+        '422':
+          description: Validation Error (e.g., invalid email format).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  /api/auth/verify-code:
+    post:
+      summary: Step 2 - Verify the email with the received code
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, code]
+              properties:
+                email: { type: string, format: email, example: "newuser@example.com" }
+                code: { type: string, description: "The 4-digit code from the email", example: "1234" }
+      responses:
+        '200':
+          description: Email verified successfully. Returns a temporary token for the registration step.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Email verified successfully." }
+                  verificationToken: { type: string }
+        '400':
+          description: Bad Request (e.g., code is invalid or expired).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation Error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  /api/auth/register:
+    post:
+      summary: Step 3 - Complete user registration
+      tags: [Auth]
+      description: Requires the temporary `verificationToken` from the previous step as a Bearer token.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fullName, password]
+              properties:
+                fullName: { type: string, example: "Peter Parker" }
+                password: { type: string, format: password, example: "yourStrongPassword123!" }
+      responses:
+        '201':
+          description: User registered successfully. Returns a final session token and user object.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAuthSuccess'
+        '401':
+          description: Unauthorized (invalid or expired verification token).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation Error (e.g., password too short).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  /api/auth/login:
+    post:
+      summary: Login for existing users
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email, example: "peter@example.com" }
+                password: { type: string, format: password, example: "yourStrongPassword123!" }
+      responses:
+        '200':
+          description: Login successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAuthSuccess'
+        '401':
+          description: Unauthorized (Invalid email or password).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation Error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  # =======================================================
+  # PASSWORD RESET FLOW
+  # =======================================================
+
+  /api/auth/forgot-password:
+    post:
+      summary: Forgot Password (Step 1)
+      tags: [Auth]
+      description: Initiates the password reset flow by sending an OTP to the user's email.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "peter@example.com"
+      responses:
+        '202':
+          description: Accepted. A generic success message is returned to prevent email enumeration. If the user exists, an email is sent.
+        '422':
+          description: Validation Error (e.g., invalid email format).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '500':
+          description: Server error, e.g., if the email service fails.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/verify-otp:
+    post:
+      summary: Forgot Password (Step 2) - Verify OTP
+      tags: [Auth]
+      description: Verifies the OTP and returns a short-lived token required for the final password reset step.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, otp]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "peter@example.com"
+                otp:
+                  type: string
+                  description: "The 6-digit OTP from the password reset email"
+                  example: "123456"
+      responses:
+        '200':
+          description: OTP verified successfully. Returns a temporary token for the next step.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "OTP verified successfully." }
+                  resetToken: { type: string, description: "A short-lived JWT for password reset authorization." }
+        '400':
+          description: Bad Request (e.g., OTP is invalid or expired).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation Error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+
+  /api/auth/reset-password/{token}:
+    post:
+      summary: Forgot Password (Step 3) - Reset Password
+      tags: [Auth]
+      description: Sets a new password using the temporary token from the OTP verification step. Authorization is handled by the token in the URL path, not a Bearer token.
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+          description: The temporary reset token from the verify-otp endpoint.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [new_password, confirm_password]
+              properties:
+                new_password:
+                  type: string
+                  format: password
+                  example: "myNewPassword!456"
+                confirm_password:
+                  type: string
+                  format: password
+                  example: "myNewPassword!456"
+      responses:
+        '200':
+          description: Password has been reset successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Password has been reset successfully."
+        '401':
+          description: Unauthorized (invalid, missing, or expired reset token).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Bad Request (e.g., passwords do not match).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation Error (e.g., new password is too short).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
